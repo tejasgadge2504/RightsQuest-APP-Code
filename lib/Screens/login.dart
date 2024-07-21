@@ -64,10 +64,10 @@ class _LoginPageState extends State<LoginPage> {
                   print('Email: $email');
                   print('Password: $password');
                   // Perform login action here
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const QuizPage()),
-                  );
+                  // Navigator.pushReplacement(
+                  //   context,
+                  //   MaterialPageRoute(builder: (context) =>  QuizPage()),
+                  // );
                 },
                 style: ButtonStyle(
                   backgroundColor: MaterialStateProperty.all<Color>(Colors.blue),
