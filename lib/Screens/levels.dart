@@ -3,7 +3,7 @@ import 'package:moralmentor/Screens/quiz.dart';
 // import 'QuizPage.dart';
 
 class LevelsPage extends StatelessWidget {
-  final List<String> levels = ['Right to Education', 'Right to Freedom', 'Right to Equality'];
+  final List<String> levels = ['Right to Freedom', 'Right to Education', 'Right to Equality'];
 
   @override
   Widget build(BuildContext context) {

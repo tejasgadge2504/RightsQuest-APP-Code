@@ -24,7 +24,9 @@ class _QuizPageState extends State<QuizPage> {
 
   Future<Map<String, dynamic>> fetchQuizData(String rightName) async {
     ApiService apiService = ApiService();
+    print(rightName);
     return await apiService.fetchQuizData(rightName);
+
   }
 
   void showFeedbackDialog(String feedback) {
