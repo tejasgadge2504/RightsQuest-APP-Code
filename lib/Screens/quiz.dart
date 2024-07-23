@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:moralmentor/Screens/levels.dart';
+import 'dart:math';  // for shuffling the options
+
 import '../requests/ApiService.dart';
 
 class QuizPage extends StatefulWidget {
   final String rightName;
+  final VoidCallback? onCompletion;
 
-  QuizPage({required this.rightName});
+  QuizPage({required this.rightName, this.onCompletion});
 
   @override
   State<QuizPage> createState() => _QuizPageState();
@@ -15,6 +19,9 @@ class _QuizPageState extends State<QuizPage> {
   List<bool> _isSelected = [false, false, false, false];
   String? feedback;
   int points = 0;
+  bool feedbackGiven = false;
+  List<String> _optionTexts = [];
+  Map<String, int> _pointsMapping = {}; // Mapping of option text to points
 
   @override
   void initState() {
@@ -26,7 +33,6 @@ class _QuizPageState extends State<QuizPage> {
     ApiService apiService = ApiService();
     print(rightName);
     return await apiService.fetchQuizData(rightName);
-
   }
 
   void showFeedbackDialog(String feedback) {
@@ -40,7 +46,13 @@ class _QuizPageState extends State<QuizPage> {
             TextButton(
               child: Text('OK'),
               onPressed: () {
+                setState(() {
+                  feedbackGiven = true;
+                });
                 Navigator.of(context).pop();
+                if (widget.onCompletion != null) {
+                  widget.onCompletion!();
+                }
               },
             ),
           ],
@@ -49,14 +61,12 @@ class _QuizPageState extends State<QuizPage> {
     );
   }
 
-  void updatePoints(int index) {
-    if (index == 0) {
-      points += 3;
-    } else if (index == 1) {
-      points += 2;
-    } else if (index == 2) {
-      points += 1;
-    } // No points for index 3 as it is negative outcome
+  void updatePoints(String selectedOption) {
+    points += _pointsMapping[selectedOption] ?? 0;
+  }
+
+  void shuffleOptions() {
+    _optionTexts.shuffle(Random());
   }
 
   @override
@@ -66,8 +76,6 @@ class _QuizPageState extends State<QuizPage> {
       appBar: AppBar(
         title: Row(
           children: [
-            // Image.asset("assets/images/RightsQuest_logo.png", width: 170,),
-            // SizedBox(width: size.width * 0.3),
             InkWell(
               onTap: () {
                 // Direct To Profile Page on Tap
@@ -87,7 +95,6 @@ class _QuizPageState extends State<QuizPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   CircularProgressIndicator(),
-                  // Image.asset('images/LoadingRobot.gif',height: 150,), // Replace with your GIF asset path
                   SizedBox(height: 20),
                   Text('Loading for you most suitable scenarios'),
                 ],
@@ -98,7 +105,7 @@ class _QuizPageState extends State<QuizPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Image.asset('assets/images/ErrorRobot.png', height: 150,), // Replace with your GIF asset path
+                  Image.asset('assets/images/ErrorRobot.png', height: 150,),
                   SizedBox(height: 20),
                   Text('Error: ${snapshot.error}', style: TextStyle(fontWeight: FontWeight.bold),),
                 ],
@@ -113,12 +120,16 @@ class _QuizPageState extends State<QuizPage> {
             var neutral = quizData['neutral'] ?? 'No option available';
             var negative = quizData['negative'] ?? 'No option available';
             var feedback = quizData['feedback'] ?? 'No feedback available';
-            List<String> _optionTexts = [
-              mostPositive,
-              positive,
-              neutral,
-              negative,
-            ];
+
+            _optionTexts = [mostPositive, positive, neutral, negative];
+            _pointsMapping = {
+              mostPositive: 3,
+              positive: 2,
+              neutral: 1,
+              negative: 0,
+            };
+
+            shuffleOptions();  // Shuffle options here
 
             return SingleChildScrollView(
               scrollDirection: Axis.vertical,
@@ -129,116 +140,84 @@ class _QuizPageState extends State<QuizPage> {
                     Container(
                       child: Row(
                         children: [
-                          // Image.asset('assets/images/QuestionAvtar.png', width: 30,),
-                          // SizedBox(width: size.width * 0.05,),
                           Flexible(
                             child: Container(
+                              padding: EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.greenAccent.shade100,
-                                    offset: const Offset(5.0, 5.0),
-                                    blurRadius: 10.0,
-                                    spreadRadius: 2.0,
-                                  ),
-                                  BoxShadow(
-                                    color: Colors.white,
-                                    offset: const Offset(0.0, 0.0),
-                                    blurRadius: 0.0,
-                                    spreadRadius: 0.0,
-                                  ),
-                                ],
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  width: 2,
-                                  color: Colors.grey,
-                                ),
+                                borderRadius: BorderRadius.circular(10),
+                                color: Colors.grey.shade200,
                               ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(10.0),
-                                child: Text(
-                                  story,
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                                ),
+                              child: Text(
+                                story,
+                                style: TextStyle(fontSize: 16),
                               ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    SizedBox(height: size.height * 0.05,),
-                    Row(
-                      children: [
-                        Text('Scenario :', style: TextStyle(fontWeight: FontWeight.bold),),
-                        SizedBox(width: size.width * 0.65,),
-                        // Text("1/3", style: TextStyle(fontWeight: FontWeight.bold),),
-                      ],
-                    ),
-                    SizedBox(height: size.height * 0.01,),
-                    Text(
-                      scenario,
-                      style: TextStyle(fontWeight: FontWeight.w600, color: Colors.blue, fontSize: 14),
-                    ),
-                    SizedBox(height: size.height * 0.01,),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(4, (index) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: InkWell(
-                            onTap: () {
-                              setState(() {
-                                _isSelected = [false, false, false, false];
-                                _isSelected[index] = !_isSelected[index];
-                                feedback = quizData['feedback'];
-                                showFeedbackDialog(feedback!);
-                                updatePoints(index);
-                              });
-                            },
-                            child: Container(
-                              constraints: BoxConstraints(minHeight: 50),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(25),
-                                border: Border.all(
-                                  width: 2,
-                                  color: _isSelected[index]
-                                      ? index == 0
-                                      ? Colors.green
-                                      : index == 1 || index == 2
-                                      ? Colors.yellow.shade800
-                                      : Colors.red
-                                      : Colors.grey,
-                                ),
-                              ),
-                              alignment: Alignment.center,
-                              child: Padding(
-                                padding: const EdgeInsets.all(10.0),
-                                child: Text(
-                                  _optionTexts[index],
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: _isSelected[index]
-                                        ? index == 0
-                                        ? Colors.green
-                                        : index == 1 || index == 2
-                                        ? Colors.yellow.shade800
-                                        : Colors.red
-                                        : Colors.grey,
+                    SizedBox(height: 20),
+                    Container(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            scenario,
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 10),
+                          ...List.generate(
+                            _optionTexts.length,
+                                (index) => Container(
+                              margin: EdgeInsets.only(bottom: 10),
+                              child: Row(
+                                children: [
+                                  Radio(
+                                    value: index,
+                                    groupValue: _isSelected.indexOf(true),
+                                    onChanged: feedbackGiven ? null : (int? value) {
+                                      setState(() {
+                                        _isSelected = List.generate(_isSelected.length, (i) => i == index);
+                                        updatePoints(_optionTexts[index]);
+                                        showFeedbackDialog(feedback!);
+                                        if (widget.onCompletion != null) {
+                                          widget.onCompletion!();
+                                        }
+                                      });
+                                    },
                                   ),
-                                ),
+                                  Expanded(child: Text(_optionTexts[index])),
+                                ],
                               ),
                             ),
                           ),
-                        );
-                      }),
+                        ],
+                      ),
                     ),
-                    SizedBox(height: size.height * 0.05,),
-                    ElevatedButton(
-                      onPressed: () {
-                        // Handle submission logic here, e.g., navigate to the next screen or display a summary
-                      },
-                      child: Text('Submit'),
-                    ),
+                    if (feedbackGiven) ...[
+                      SizedBox(height: 20),
+                      Container(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Points: $points',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => LevelsPage()),
+                          );
+                        },
+                        child: Text('Next'),
+                      ),
+                    ],
                   ],
                 ),
               ),
